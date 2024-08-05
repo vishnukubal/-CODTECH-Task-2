@@ -1,0 +1,63 @@
+import socket
+from scapy.all import *
+import requests
+
+def scan_open_ports(target_ip, start_port=1, end_port=1024, timeout=0.5):
+    print(f"Scanning open ports on {target_ip}...")
+    open_ports = []
+    for port in range(start_port, end_port):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        
+        result = sock.connect_ex((target_ip, port))
+        if result == 0:
+            open_ports.append(port)
+        sock.close()
+    return open_ports
+
+def check_outdated_software(url):
+    print(f"Checking for outdated software on {url}...")
+    outdated = []
+    try:
+        response = requests.get(url)
+        server_header = response.headers.get('Server', '')
+        if 'Apache' in server_header:
+            version = server_header.split('/')[1]
+            if version < '2.4.41':  # Example version check
+                outdated.append(f"Apache {version}")
+        elif 'nginx' in server_header:
+            version = server_header.split('/')[1]
+            if version < '1.18.0':  # Example version check
+                outdated.append(f"nginx {version}")
+        # Add more checks as needed
+    except requests.RequestException as e:
+        print(f"Error checking {url}: {e}")
+    return outdated
+
+def check_misconfigurations(url):
+    print(f"Checking for misconfigurations on {url}...")
+    misconfigurations = []
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            misconfigurations.append("Directory listing enabled")
+        # Add more checks as needed
+    except requests.RequestException as e:
+        print(f"Error checking {url}: {e}")
+    return misconfigurations
+
+def main():
+    target_ip = input("Enter target IP address: ")
+    website_url = input("Enter website URL: ")
+
+    open_ports = scan_open_ports(target_ip)
+    print(f"Open ports: {open_ports}")
+
+    outdated_software = check_outdated_software(website_url)
+    print(f"Outdated software: {outdated_software}")
+
+    misconfigurations = check_misconfigurations(website_url)
+    print(f"Misconfigurations: {misconfigurations}")
+
+if __name__ == "__main__":
+    main()
